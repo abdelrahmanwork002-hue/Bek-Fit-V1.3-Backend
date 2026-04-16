@@ -38,7 +38,7 @@ app.get('/api/me', requireAuth, async (req, res) => {
   try {
     const userId = (req as any).auth.userId;
     const user = await db.query.users.findFirst({
-      where: (user, { eq }) => eq(user.id, userId),
+      where: (user: any, { eq }: any) => eq(user.id, userId),
     });
     if (!user) return res.status(404).json({ error: 'Sync pending' });
     res.json(user);

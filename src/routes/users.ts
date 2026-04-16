@@ -21,7 +21,7 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
 // 2. Update user role (Admin only)
 router.patch('/:id/role', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { role } = req.body;
 
     if (!['user', 'coach', 'admin'].includes(role)) {

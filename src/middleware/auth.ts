@@ -1,8 +1,8 @@
 import { ClerkExpressWithAuth } from '@clerk/clerk-sdk-node';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 // Middleware to protect routes and require a valid Clerk session
-export const requireAuth = ClerkExpressWithAuth();
+export const requireAuth = ClerkExpressWithAuth() as unknown as RequestHandler;
 
 // custom middleware to check for admin role
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {

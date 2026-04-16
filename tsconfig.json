@@ -7,7 +7,9 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "rootDir": "./src",
     "outDir": "./dist",
+    "ignoreDeprecations": "6.0",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

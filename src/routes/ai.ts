@@ -5,9 +5,9 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const router = Router();
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-});
+}) : null;
 
 import { db } from '../db/index.js';
 import { nutritionLogs, painLogs, users } from '../db/schema.js';
@@ -29,7 +29,7 @@ router.post('/draft-ticket', requireAuth, requireAdmin, async (req, res) => {
       recentNutritionLogs: foodLogs
     };
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!openai || !process.env.OPENAI_API_KEY) {
       return res.status(200).json({ 
         draft: `[AI Placeholder] Response for ${user?.fullName}. \nLogs Analyzed: ${healthLogs.length} health logs, ${foodLogs.length} nutrition logs. \nDraft: "We noticed your recent reports and want to help..."`
       });
