@@ -9,6 +9,7 @@ import profileRoutes from './routes/profiles.js';
 import webhookRoutes from './routes/webhooks.js';
 import userRoutes from './routes/users.js';
 import logRoutes from './routes/logs.js';
+import aiRoutes from './routes/ai.js';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use('/api/profiles', profileRoutes);
 app.use('/api/exercises', exerciseRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
