@@ -7,6 +7,8 @@ import { requireAuth } from './middleware/auth.js';
 import exerciseRoutes from './routes/exercises.js';
 import profileRoutes from './routes/profiles.js';
 import webhookRoutes from './routes/webhooks.js';
+import userRoutes from './routes/users.js';
+import logRoutes from './routes/logs.js';
 
 dotenv.config();
 
@@ -21,6 +23,8 @@ app.use(express.json());
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/exercises', exerciseRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/logs', logRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
