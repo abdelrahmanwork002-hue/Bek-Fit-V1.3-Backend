@@ -4,6 +4,9 @@ import * as dotenv from 'dotenv';
 import { db } from './db/index.js';
 import { users } from './db/schema.js';
 import { requireAuth } from './middleware/auth.js';
+import exerciseRoutes from './routes/exercises.js';
+import profileRoutes from './routes/profiles.js';
+import webhookRoutes from './routes/webhooks.js';
 
 dotenv.config();
 
@@ -14,37 +17,28 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Routes
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/profiles', profileRoutes);
+app.use('/api/exercises', exerciseRoutes);
+
 // Health Check
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// Protected Route Example: Get Current User Profile
+// Protected Route Example: User Profile Discovery
 app.get('/api/me', requireAuth, async (req, res) => {
   try {
-    const auth = (req as any).auth;
-    const userId = auth.userId;
-
+    const userId = (req as any).auth.userId;
     const user = await db.query.users.findFirst({
       where: (user, { eq }) => eq(user.id, userId),
     });
-
-    if (!user) {
-      return res.status(404).json({ error: 'User profile not synchronized yet' });
-    }
-
+    if (!user) return res.status(404).json({ error: 'Sync pending' });
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Error' });
   }
-});
-
-// Sync Webhook Placeholder
-app.post('/api/webhooks/user-created', async (req, res) => {
-  // Logic to sync Clerk user with Neon database
-  // This would usually verify the Svix signature
-  res.json({ message: 'Webhook received' });
 });
 
 app.listen(port, () => {
