@@ -28,7 +28,11 @@ app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Health Check
+// Base / Health Route
+app.get('/', (req, res) => {
+  res.json({ message: 'Bek Fit V1.3 Backend is Live!' });
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
