@@ -5,7 +5,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const router = Router();
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new (OpenAI as any)({
   apiKey: process.env.OPENAI_API_KEY,
 }) : null;
 
