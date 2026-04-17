@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
-import { nutritionLogs, painLogs } from '../db/schema.js';
+import { nutritionLogs, painLogs, weightLogs } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { eq, desc } from 'drizzle-orm';
 
@@ -67,6 +67,38 @@ router.post('/pain', requireAuth, async (req, res) => {
     res.status(201).json(newLog);
   } catch (error) {
     console.error('Error logging pain:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 5. Get weight logs
+router.get('/weight', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).auth.userId;
+    const logs = await db.select()
+      .from(weightLogs)
+      .where(eq(weightLogs.userId, userId))
+      .orderBy(desc(weightLogs.createdAt));
+    res.json(logs);
+  } catch (error) {
+    console.error('Error fetching weight logs:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 6. Add weight log
+router.post('/weight', requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).auth.userId;
+    const { weightKg } = req.body;
+    
+    const [newLog] = await db.insert(weightLogs)
+      .values({ userId, weightKg })
+      .returning();
+      
+    res.status(201).json(newLog);
+  } catch (error) {
+    console.error('Error logging weight:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

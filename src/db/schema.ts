@@ -82,3 +82,11 @@ export const nutritionLogs = pgTable('nutrition_logs', {
   fatsG: integer('fats_g'),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// 8. Weight Logs (Progress)
+export const weightLogs = pgTable('weight_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  weightKg: decimal('weight_kg', { precision: 5, scale: 2 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
