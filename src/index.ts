@@ -47,6 +47,10 @@ app.get('/api/me', requireAuth, async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`[BekFit] Server running at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`[BekFit] Server running at http://localhost:${port}`);
+  });
+}
+
+export default app;
