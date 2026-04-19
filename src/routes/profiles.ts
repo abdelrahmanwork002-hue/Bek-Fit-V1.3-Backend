@@ -90,12 +90,12 @@ router.patch('/:userId', requireAuth, requireAdmin, async (req, res) => {
       .returning();
 
     // Log Audit
-    await logAuditAction((req as any).auth.userId, userId, 'profile_override', JSON.stringify(data));
+    await logAuditAction((req as any).auth.userId, userId as string, 'profile_override', JSON.stringify(data));
 
     res.json(updatedProfile);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.issues });
     }
     console.error('Error in admin profile update:', error);
     res.status(500).json({ error: 'Internal Server Error' });
