@@ -95,7 +95,7 @@ export const weightLogs = pgTable('weight_logs', {
 export const auditLogs = pgTable('audit_logs', {
   id: uuid('id').defaultRandom().primaryKey(),
   adminId: text('admin_id').references(() => users.id).notNull(),
-  targetUserId: text('target_user_id').references(() => users.id).notNull(),
+  targetUserId: text('target_user_id').references(() => users.id), // Nullable for invitations
   action: text('action').notNull(), // 'role_change', 'status_change', 'profile_override', etc.
   details: text('details'),
   createdAt: timestamp('created_at').defaultNow(),

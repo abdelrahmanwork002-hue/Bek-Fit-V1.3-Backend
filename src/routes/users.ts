@@ -39,7 +39,7 @@ router.post('/invite', requireAuth, requireAdmin, async (req, res) => {
     });
 
     // Log Audit
-    await logAuditAction((req as any).auth.userId, 'system_action', 'user_invited', `Invited ${email} as ${role}`);
+    await logAuditAction((req as any).auth.userId, null as any, 'user_invited', `Invited ${email} as ${role} (Name: ${fullName})`);
 
     res.json(invitation);
   } catch (error: any) {
