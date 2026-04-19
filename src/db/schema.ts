@@ -11,6 +11,8 @@ export const users = pgTable('users', {
   fullName: text('full_name'),
   avatarUrl: text('avatar_url'),
   role: roleEnum('role').default('user'),
+  status: text('status').default('active'), // 'active' or 'suspended'
+  coachId: text('coach_id').references((): any => users.id), // Direct assignment
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

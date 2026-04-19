@@ -73,32 +73,45 @@ router.get('/:id/audit', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// 4. Update user role (Admin only)
-router.patch('/:id/role', requireAuth, requireAdmin, async (req, res) => {
+// 4. Update user governance (Admin only)
+router.patch('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const { role } = req.body;
+    const { role, status, coachId } = req.body;
 
-    if (!['user', 'coach', 'admin'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role' });
+    const updateData: any = { updatedAt: new Date() };
+    if (role) {
+       if (!['user', 'coach', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+       updateData.role = role;
+    }
+    if (status) {
+       if (!['active', 'suspended'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+       updateData.status = status;
+    }
+    if (coachId !== undefined) {
+       updateData.coachId = coachId;
     }
 
     // Update in Neon Database
     await db.update(users)
-      .set({ role, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(users.id, id));
 
-    // Update in Clerk Metadata (for JWT verification)
-    await clerkClient.users.updateUserMetadata(id, {
-      publicMetadata: { role }
-    });
+    // If role changed, update in Clerk Metadata
+    if (role) {
+      await clerkClient.users.updateUserMetadata(id, {
+        publicMetadata: { role }
+      });
+    }
 
     // Log Audit
-    await logAuditAction((req as any).auth.userId, id, 'role_change', `Role updated to ${role}`);
+    if (role) await logAuditAction((req as any).auth.userId, id, 'role_change', `Role updated to ${role}`);
+    if (status) await logAuditAction((req as any).auth.userId, id, 'status_change', `Status set to ${status}`);
+    if (coachId) await logAuditAction((req as any).auth.userId, id, 'coach_assignment', `Assigned to coach ${coachId}`);
 
-    res.json({ message: `Role updated to ${role}` });
+    res.json({ message: 'User updated successfully' });
   } catch (error) {
-    console.error('Error updating role:', error);
+    console.error('Error updating user:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
