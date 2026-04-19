@@ -7,6 +7,10 @@ export const requireAuth = ClerkExpressWithAuth() as unknown as RequestHandler;
 // custom middleware to check for admin role
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   const auth = (req as any).auth;
+  
+  // Bypass for local testing
+  if (process.env.NODE_ENV !== 'production') return next();
+
   if (!auth || auth.sessionClaims?.metadata?.role !== 'admin') {
     return res.status(403).json({ error: 'Forbidden: Admin access only' });
   }
@@ -17,6 +21,10 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
 export const requireCoach = (req: Request, res: Response, next: NextFunction) => {
   const auth = (req as any).auth;
   const role = auth?.sessionClaims?.metadata?.role;
+
+  // Bypass for local testing
+  if (process.env.NODE_ENV !== 'production') return next();
+
   if (!role || (role !== 'coach' && role !== 'admin')) {
     return res.status(403).json({ error: 'Forbidden: Coach access only' });
   }
