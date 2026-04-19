@@ -90,3 +90,13 @@ export const weightLogs = pgTable('weight_logs', {
   weightKg: decimal('weight_kg', { precision: 5, scale: 2 }).notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// 9. Audit Logs
+export const auditLogs = pgTable('audit_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  adminId: text('admin_id').references(() => users.id).notNull(),
+  targetUserId: text('target_user_id').references(() => users.id).notNull(),
+  action: text('action').notNull(), // 'role_change', 'status_change', 'profile_override', etc.
+  details: text('details'),
+  createdAt: timestamp('created_at').defaultNow(),
+});

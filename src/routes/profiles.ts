@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { profiles, users } from '../db/schema.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { logAuditAction } from '../lib/audit.js';
 
 const router = Router();
 
@@ -66,6 +67,37 @@ router.patch('/me', requireAuth, async (req, res) => {
       return res.status(400).json({ error: (error as any).issues || (error as any).errors });
     }
     console.error('Error updating profile:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 3. Admin: Update any user profile
+router.patch('/:userId', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const data = profileSchema.parse(req.body);
+
+    const [updatedProfile] = await db.insert(profiles)
+      .values({ 
+        userId, 
+        ...data,
+        weightKg: data.weightKg?.toString()
+      } as any)
+      .onConflictDoUpdate({
+        target: profiles.userId,
+        set: { ...data, weightKg: data.weightKg?.toString() } as any
+      })
+      .returning();
+
+    // Log Audit
+    await logAuditAction((req as any).auth.userId, userId, 'profile_override', JSON.stringify(data));
+
+    res.json(updatedProfile);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Error in admin profile update:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });

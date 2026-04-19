@@ -4,6 +4,7 @@ import { users } from '../db/schema.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { eq } from 'drizzle-orm';
 import { clerkClient } from '@clerk/clerk-sdk-node';
+import { logAuditAction } from '../lib/audit.js';
 
 const router = Router();
 
@@ -18,7 +19,25 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// 2. Update user role (Admin only)
+// 3. Get audit logs for a specific user (Admin only)
+router.get('/:id/audit', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+    const logs = await db.query.auditLogs.findMany({
+      where: (l: any, { eq }: any) => eq(l.targetUserId, id),
+      with: {
+        // admin: true // can join with users to get admin name
+      },
+      orderBy: (l: any, { desc }: any) => [desc(l.createdAt)]
+    });
+    res.json(logs);
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// 4. Update user role (Admin only)
 router.patch('/:id/role', requireAuth, requireAdmin, async (req, res) => {
   try {
     const id = req.params.id as string;
@@ -37,6 +56,9 @@ router.patch('/:id/role', requireAuth, requireAdmin, async (req, res) => {
     await clerkClient.users.updateUserMetadata(id, {
       publicMetadata: { role }
     });
+
+    // Log Audit
+    await logAuditAction((req as any).auth.userId, id, 'role_change', `Role updated to ${role}`);
 
     res.json({ message: `Role updated to ${role}` });
   } catch (error) {
