@@ -100,3 +100,30 @@ export const auditLogs = pgTable('audit_logs', {
   details: text('details'),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// 10. Plans (Master Templates)
+export const plans = pgTable('plans', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  type: text('type').default('Strength'), // Strength, Recovery, etc.
+  duration: text('duration').default('12 Weeks'),
+  status: text('status').default('draft'), // draft, published, archived
+  createdBy: text('created_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// 11. Meals (Nutrition Library)
+export const meals = pgTable('meals', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  calories: integer('calories').notNull(),
+  proteinG: integer('protein_g'),
+  carbsG: integer('carbs_g'),
+  fatsG: integer('fats_g'),
+  ingredients: text('ingredients'),
+  instructions: text('instructions'),
+  tags: text('tags').array(), // Vegan, GF, etc.
+  imageUrl: text('image_url'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
