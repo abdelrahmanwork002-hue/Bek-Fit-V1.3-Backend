@@ -1,0 +1,73 @@
+import express from 'express';
+import cors from 'cors';
+import * as dotenv from 'dotenv';
+import { db } from './db/index.js';
+import { requireAuth } from './middleware/auth.js';
+import exerciseRoutes from './routes/exercises.js';
+import profileRoutes from './routes/profiles.js';
+import webhookRoutes from './routes/webhooks.js';
+import userRoutes from './routes/users.js';
+import logRoutes from './routes/logs.js';
+import aiRoutes from './routes/ai.js';
+import routineRoutes from './routes/routines.js';
+import planRoutes from './routes/plans.js';
+dotenv.config();
+const app = express();
+const port = process.env.PORT || 3001;
+// Middleware
+app.use(cors({
+    origin: '*', // In production, replace with specific frontend URL
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true,
+    optionsSuccessStatus: 200
+}));
+app.use(express.json());
+// Handle OPTIONS preflight for all routes
+app.options('*', cors());
+// Routes
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/profiles', profileRoutes);
+app.use('/api/exercises', exerciseRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/logs', logRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/routines', routineRoutes);
+app.use('/api/plans', planRoutes);
+// Base / Health Route
+app.get('/', (req, res) => {
+    res.json({ message: 'Bek Fit V1.3 Backend is Live!' });
+});
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        v: '1.3.2',
+        timestamp: new Date().toISOString(),
+        trace: 'cors_hardened_v2',
+        env: {
+            hasDb: !!process.env.DATABASE_URL,
+            hasClerk: !!process.env.CLERK_SECRET_KEY
+        }
+    });
+});
+// Protected Route Example: User Profile Discovery
+app.get('/api/me', requireAuth, async (req, res) => {
+    try {
+        const userId = req.auth.userId;
+        const user = await db.query.users.findFirst({
+            where: (user, { eq }) => eq(user.id, userId),
+        });
+        if (!user)
+            return res.status(404).json({ error: 'Sync pending' });
+        res.json(user);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal Error' });
+    }
+});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        console.log(`[BekFit] Server running at http://localhost:${port}`);
+    });
+}
+export default app;

@@ -1,0 +1,154 @@
+import { Router } from 'express';
+import { db } from '../db/index.js';
+import { users } from '../db/schema.js';
+import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { eq } from 'drizzle-orm';
+import { clerkClient } from '@clerk/clerk-sdk-node';
+import { logAuditAction } from '../lib/audit.js';
+const router = Router();
+// 1. Get all users (Admin only)
+const authMiddleware = process.env.NODE_ENV === 'production' ? requireAuth : (req, res, next) => next();
+router.get('/', authMiddleware, requireAdmin, async (req, res) => {
+    console.log('[BACKEND DEBUG] GET /api/users reached');
+    console.log('[BACKEND DEBUG] Auth Context:', req.auth);
+    try {
+        const allUsers = await db.select().from(users);
+        console.log('[BACKEND DEBUG] Found users in DB:', allUsers.length);
+        res.json(allUsers);
+    }
+    catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+// 2. Create a new user directly (Admin only)
+router.post('/create', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { email, password, role, fullName, phoneNumber } = req.body;
+        if (!email || !password || !role) {
+            return res.status(400).json({ error: 'Email, password, and role are required' });
+        }
+        // 1. Create in Clerk
+        const clerkUser = await clerkClient.users.createUser({
+            emailAddress: [email],
+            password: password,
+            firstName: fullName?.split(' ')[0] || '',
+            lastName: fullName?.split(' ').slice(1).join(' ') || '',
+            phoneNumber: phoneNumber ? [phoneNumber] : undefined,
+            publicMetadata: {
+                role,
+                fullName
+            }
+        });
+        // 2. Neon sync usually happens via webhooks, but we can do a quick check/insert
+        // to ensure the admin sees them immediately without waiting for webhook latency.
+        const [newUser] = await db.insert(users).values({
+            id: clerkUser.id,
+            email: email,
+            fullName: fullName,
+            role: role,
+            status: 'active'
+        }).onConflictDoUpdate({
+            target: [users.id],
+            set: { role: role, fullName: fullName }
+        }).returning();
+        // Log Audit
+        await logAuditAction(req.auth.userId, clerkUser.id, 'user_created', `Directly created ${email} as ${role}`);
+        res.json(newUser);
+    }
+    catch (error) {
+        console.error('Error creating user:', error);
+        res.status(error.status || 500).json({
+            message: error.errors?.[0]?.longMessage || error.message || 'Failed to create user'
+        });
+    }
+});
+// 3. Invite a new user (deprecated but kept for compatibility)
+router.post('/invite', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const { email, role, fullName } = req.body;
+        if (!email || !role) {
+            return res.status(400).json({ error: 'Email and role are required' });
+        }
+        // Create invitation in Clerk
+        const invitation = await clerkClient.invitations.createInvitation({
+            emailAddress: email,
+            publicMetadata: {
+                role,
+                fullName,
+            },
+            // redirectUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+        });
+        // Log Audit
+        await logAuditAction(req.auth.userId, null, 'user_invited', `Invited ${email} as ${role} (Name: ${fullName})`);
+        res.json(invitation);
+    }
+    catch (error) {
+        console.error('Error creating invitation:', error);
+        res.status(error.status || 500).json({
+            message: error.errors?.[0]?.longMessage || 'Failed to send invitation'
+        });
+    }
+});
+// 3. Get audit logs for a specific user (Admin only)
+router.get('/:id/audit', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const logs = await db.query.auditLogs.findMany({
+            where: (l, { eq }) => eq(l.targetUserId, id),
+            with: {
+            // admin: true // can join with users to get admin name
+            },
+            orderBy: (l, { desc }) => [desc(l.createdAt)]
+        });
+        res.json(logs);
+    }
+    catch (error) {
+        console.error('Error fetching audit logs:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+// 4. Update user governance (Admin only)
+router.patch('/:id', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { role, status, coachId } = req.body;
+        const updateData = { updatedAt: new Date() };
+        if (role) {
+            if (!['user', 'coach', 'admin'].includes(role))
+                return res.status(400).json({ error: 'Invalid role' });
+            updateData.role = role;
+        }
+        if (status) {
+            if (!['active', 'suspended'].includes(status))
+                return res.status(400).json({ error: 'Invalid status' });
+            updateData.status = status;
+        }
+        if (coachId !== undefined) {
+            updateData.coachId = coachId;
+        }
+        // Update in Neon Database
+        await db.update(users)
+            .set(updateData)
+            .where(eq(users.id, id));
+        // If role changed, update in Clerk Metadata
+        if (role) {
+            await clerkClient.users.updateUserMetadata(id, {
+                publicMetadata: { role }
+            });
+        }
+        // Log Audit
+        if (role)
+            await logAuditAction(req.auth.userId, id, 'role_change', `Role updated to ${role}`);
+        if (status)
+            await logAuditAction(req.auth.userId, id, 'status_change', `Status set to ${status}`);
+        if (coachId)
+            await logAuditAction(req.auth.userId, id, 'coach_assignment', `Assigned to coach ${coachId}`);
+        res.json({ message: 'User updated successfully' });
+    }
+    catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+export default router;
