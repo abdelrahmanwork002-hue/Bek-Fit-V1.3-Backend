@@ -49,9 +49,13 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
-    v: '1.3.1',
+    v: '1.3.2',
     timestamp: new Date().toISOString(),
-    trace: 'cors_hardened_v2'
+    trace: 'cors_hardened_v2',
+    env: {
+       hasDb: !!process.env.DATABASE_URL,
+       hasClerk: !!process.env.CLERK_SECRET_KEY
+    }
   });
 });
 
