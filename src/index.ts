@@ -19,8 +19,17 @@ const app = express();
 const port = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*', // In production, replace with specific frontend URL
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
 app.use(express.json());
+
+// Handle OPTIONS preflight for all routes
+app.options('*', cors());
 
 // Routes
 app.use('/api/webhooks', webhookRoutes);
