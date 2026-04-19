@@ -47,7 +47,12 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'healthy', 
+    v: '1.3.1',
+    timestamp: new Date().toISOString(),
+    trace: 'cors_hardened_v2'
+  });
 });
 
 // Protected Route Example: User Profile Discovery
