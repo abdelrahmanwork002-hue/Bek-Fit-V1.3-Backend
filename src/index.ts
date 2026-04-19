@@ -28,8 +28,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Handle OPTIONS preflight for all routes
-app.options('*', cors());
+// Preflight is handled by the main cors middleware for standard setups
 
 // Routes
 app.use('/api/webhooks', webhookRoutes);
