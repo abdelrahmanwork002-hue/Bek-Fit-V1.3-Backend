@@ -24,7 +24,54 @@ router.get('/', authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
-// 2. Invite a new user
+// 2. Create a new user directly (Admin only)
+router.post('/create', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { email, password, role, fullName, phoneNumber } = req.body;
+
+    if (!email || !password || !role) {
+      return res.status(400).json({ error: 'Email, password, and role are required' });
+    }
+
+    // 1. Create in Clerk
+    const clerkUser = await clerkClient.users.createUser({
+      emailAddress: [email],
+      password: password,
+      firstName: fullName?.split(' ')[0] || '',
+      lastName: fullName?.split(' ').slice(1).join(' ') || '',
+      phoneNumber: phoneNumber ? [phoneNumber] : undefined,
+      publicMetadata: {
+        role,
+        fullName
+      }
+    });
+
+    // 2. Neon sync usually happens via webhooks, but we can do a quick check/insert
+    // to ensure the admin sees them immediately without waiting for webhook latency.
+    const [newUser] = await db.insert(users).values({
+      id: clerkUser.id,
+      email: email,
+      fullName: fullName,
+      role: role as any,
+      status: 'active'
+    }).onConflictDoUpdate({
+      target: [users.id],
+      set: { role: role as any, fullName: fullName }
+    }).returning();
+
+    // Log Audit
+    await logAuditAction((req as any).auth.userId, clerkUser.id, 'user_created', `Directly created ${email} as ${role}`);
+
+    res.json(newUser);
+  } catch (error: any) {
+    console.error('Error creating user:', error);
+    res.status(error.status || 500).json({ 
+      message: error.errors?.[0]?.longMessage || error.message || 'Failed to create user' 
+    });
+  }
+});
+
+// 3. Invite a new user (deprecated but kept for compatibility)
 router.post('/invite', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { email, role, fullName } = req.body;
