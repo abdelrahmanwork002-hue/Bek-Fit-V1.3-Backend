@@ -19,6 +19,37 @@ router.get('/', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// 2. Invite a new user
+router.post('/invite', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { email, role, fullName } = req.body;
+
+    if (!email || !role) {
+      return res.status(400).json({ error: 'Email and role are required' });
+    }
+
+    // Create invitation in Clerk
+    const invitation = await clerkClient.invitations.createInvitation({
+      emailAddress: email,
+      publicMetadata: {
+        role,
+        fullName,
+      },
+      // redirectUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+    });
+
+    // Log Audit
+    await logAuditAction((req as any).auth.userId, 'system_action', 'user_invited', `Invited ${email} as ${role}`);
+
+    res.json(invitation);
+  } catch (error: any) {
+    console.error('Error creating invitation:', error);
+    res.status(error.status || 500).json({ 
+      message: error.errors?.[0]?.longMessage || 'Failed to send invitation' 
+    });
+  }
+});
+
 // 3. Get audit logs for a specific user (Admin only)
 router.get('/:id/audit', requireAuth, requireAdmin, async (req, res) => {
   try {
