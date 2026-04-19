@@ -2,8 +2,15 @@ import { ClerkExpressWithAuth } from '@clerk/clerk-sdk-node';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 // Middleware to protect routes and require a valid Clerk session
-export const requireAuth = ClerkExpressWithAuth() as unknown as RequestHandler;
-
+export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authMiddleware = ClerkExpressWithAuth();
+    return (authMiddleware as any)(req, res, next);
+  } catch (err: any) {
+    console.error('Clerk Auth Initialization Error:', err);
+    return res.status(500).json({ error: 'Authentication Gateway Misconfigured' });
+  }
+};
 // custom middleware to check for admin role
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   const auth = (req as any).auth;
