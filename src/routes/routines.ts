@@ -11,7 +11,7 @@ router.get('/user/:userId', requireAuth, requireCoach, async (req, res) => {
   try {
     const { userId } = req.params;
     const userRoutines = await db.query.routines.findMany({
-      where: eq(routines.userId, userId),
+      where: eq(routines.userId, userId as string),
       orderBy: [desc(routines.scheduledDate)],
       with: {
         // Find exercises for these routines
@@ -47,7 +47,7 @@ router.patch('/exercise/:id', requireAuth, requireCoach, async (req, res) => {
         rpe: rpe ? parseInt(rpe) : undefined,
         restSeconds: restSeconds ? parseInt(restSeconds) : undefined,
       })
-      .where(eq(routineExercises.id, id))
+      .where(eq(routineExercises.id, id as string))
       .returning();
 
     res.json(updated);
