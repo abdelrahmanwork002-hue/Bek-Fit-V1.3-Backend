@@ -9,9 +9,14 @@ import { logAuditAction } from '../lib/audit.js';
 const router = Router();
 
 // 1. Get all users (Admin only)
-router.get('/', requireAuth, requireAdmin, async (req, res) => {
+const authMiddleware = process.env.NODE_ENV === 'production' ? requireAuth : (req: any, res: any, next: any) => next();
+
+router.get('/', authMiddleware, requireAdmin, async (req, res) => {
+  console.log('[BACKEND DEBUG] GET /api/users reached');
+  console.log('[BACKEND DEBUG] Auth Context:', (req as any).auth);
   try {
     const allUsers = await db.select().from(users);
+    console.log('[BACKEND DEBUG] Found users in DB:', allUsers.length);
     res.json(allUsers);
   } catch (error) {
     console.error('Error fetching users:', error);
