@@ -34,7 +34,6 @@ router.post('/create', requireAuth, requireAdmin, async (req, res) => {
             password: password,
             firstName: fullName?.split(' ')[0] || '',
             lastName: fullName?.split(' ').slice(1).join(' ') || '',
-            phoneNumber: phoneNumber ? [phoneNumber] : undefined,
             publicMetadata: {
                 role,
                 fullName

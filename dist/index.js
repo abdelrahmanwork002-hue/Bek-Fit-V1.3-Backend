@@ -49,37 +49,6 @@ app.get('/health', (req, res) => {
         }
     });
 });
-// === DIAGNOSTIC ENDPOINTS (remove after debugging) ===
-// Test what Clerk sees when a token is sent
-app.get('/debug/auth', requireAuth, (req, res) => {
-    const auth = req.auth;
-    res.json({
-        hasAuth: !!auth,
-        userId: auth?.userId || null,
-        sessionId: auth?.sessionId || null,
-        claims: auth?.sessionClaims || null,
-        authKeys: auth ? Object.keys(auth) : [],
-    });
-});
-// Test Clerk SDK connectivity independently
-app.get('/debug/clerk', async (req, res) => {
-    try {
-        const { clerkClient } = await import('@clerk/clerk-sdk-node');
-        const userList = await clerkClient.users.getUserList({ limit: 1 });
-        res.json({
-            clerkConnected: true,
-            usersFound: Array.isArray(userList) ? userList.length : 'unknown',
-            secretKeyPrefix: process.env.CLERK_SECRET_KEY?.substring(0, 7) || 'MISSING',
-        });
-    }
-    catch (err) {
-        res.json({
-            clerkConnected: false,
-            error: err.message,
-            secretKeyPrefix: process.env.CLERK_SECRET_KEY?.substring(0, 7) || 'MISSING',
-        });
-    }
-});
 // Protected Route Example: User Profile Discovery
 app.get('/api/me', requireAuth, async (req, res) => {
     try {
