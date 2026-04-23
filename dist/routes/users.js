@@ -40,42 +40,33 @@ router.post('/create', requireAuth, requireAdmin, async (req, res) => {
             }
         });
         // 2. Synchronize with Neon Database
-        // We use a more robust sync: check for ID first, then Email
+        // Check if user already exists by email (handles re-provisioning)
         let newUser;
-        try {
+        const existing = await db.select().from(users).where(eq(users.email, email.trim().toLowerCase())).limit(1);
+        if (existing.length > 0) {
+            // Update existing record with new Clerk ID and role
+            const results = await db.update(users)
+                .set({
+                id: clerkUser.id,
+                fullName: fullName,
+                role: role,
+                status: 'active',
+                updatedAt: new Date()
+            })
+                .where(eq(users.email, email.trim().toLowerCase()))
+                .returning();
+            newUser = results[0];
+        }
+        else {
+            // Fresh insert
             const results = await db.insert(users).values({
                 id: clerkUser.id,
                 email: email.trim().toLowerCase(),
                 fullName: fullName,
                 role: role,
                 status: 'active'
-            }).onConflictDoUpdate({
-                target: [users.id],
-                set: {
-                    role: role,
-                    fullName: fullName,
-                    email: email.trim().toLowerCase()
-                }
             }).returning();
             newUser = results[0];
-        }
-        catch (dbError) {
-            console.error('[DB SYNC ERROR]', dbError);
-            // If it failed due to email conflict (e.g. existing user with same email but diff ID)
-            // we attempt to update by email as a fallback
-            if (dbError.code === '23505') { // Unique violation
-                const results = await db.update(users)
-                    .set({
-                    id: clerkUser.id,
-                    role: role,
-                    fullName: fullName
-                })
-                    .where(eq(users.email, email.trim().toLowerCase()))
-                    .returning();
-                newUser = results[0];
-            }
-            if (!newUser)
-                throw dbError;
         }
         // Log Audit
         await logAuditAction(req.auth.userId, clerkUser.id, 'user_created', `Directly created ${email} as ${role}`);
