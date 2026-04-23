@@ -30,7 +30,7 @@ router.post('/create', requireAuth, requireAdmin, async (req, res) => {
         }
         // 1. Create in Clerk
         const clerkUser = await clerkClient.users.createUser({
-            emailAddress: [email],
+            emailAddress: [email.trim()],
             password: password,
             firstName: fullName?.split(' ')[0] || '',
             lastName: fullName?.split(' ').slice(1).join(' ') || '',
@@ -39,27 +39,53 @@ router.post('/create', requireAuth, requireAdmin, async (req, res) => {
                 fullName
             }
         });
-        // 2. Neon sync usually happens via webhooks, but we can do a quick check/insert
-        // to ensure the admin sees them immediately without waiting for webhook latency.
-        const [newUser] = await db.insert(users).values({
-            id: clerkUser.id,
-            email: email,
-            fullName: fullName,
-            role: role,
-            status: 'active'
-        }).onConflictDoUpdate({
-            target: [users.id],
-            set: { role: role, fullName: fullName }
-        }).returning();
+        // 2. Synchronize with Neon Database
+        // We use a more robust sync: check for ID first, then Email
+        let newUser;
+        try {
+            const results = await db.insert(users).values({
+                id: clerkUser.id,
+                email: email.trim().toLowerCase(),
+                fullName: fullName,
+                role: role,
+                status: 'active'
+            }).onConflictDoUpdate({
+                target: [users.id],
+                set: {
+                    role: role,
+                    fullName: fullName,
+                    email: email.trim().toLowerCase()
+                }
+            }).returning();
+            newUser = results[0];
+        }
+        catch (dbError) {
+            console.error('[DB SYNC ERROR]', dbError);
+            // If it failed due to email conflict (e.g. existing user with same email but diff ID)
+            // we attempt to update by email as a fallback
+            if (dbError.code === '23505') { // Unique violation
+                const results = await db.update(users)
+                    .set({
+                    id: clerkUser.id,
+                    role: role,
+                    fullName: fullName
+                })
+                    .where(eq(users.email, email.trim().toLowerCase()))
+                    .returning();
+                newUser = results[0];
+            }
+            if (!newUser)
+                throw dbError;
+        }
         // Log Audit
         await logAuditAction(req.auth.userId, clerkUser.id, 'user_created', `Directly created ${email} as ${role}`);
         res.json(newUser);
     }
     catch (error) {
         console.error('Error creating user:', error);
-        res.status(error.status || 500).json({
-            error: error.errors?.[0]?.longMessage || error.message || 'Failed to create user'
-        });
+        // Explicitly surface the underlying cause (Clerk error or DB constraint)
+        const errorDetail = error.errors?.[0]?.longMessage || error.detail || error.message || 'Failed to create user';
+        res.status(error.status || 500).json({ error: errorDetail });
     }
 });
 // 3. Invite a new user (deprecated but kept for compatibility)
