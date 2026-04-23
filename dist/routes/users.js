@@ -58,7 +58,7 @@ router.post('/create', requireAuth, requireAdmin, async (req, res) => {
     catch (error) {
         console.error('Error creating user:', error);
         res.status(error.status || 500).json({
-            message: error.errors?.[0]?.longMessage || error.message || 'Failed to create user'
+            error: error.errors?.[0]?.longMessage || error.message || 'Failed to create user'
         });
     }
 });
@@ -85,7 +85,7 @@ router.post('/invite', requireAuth, requireAdmin, async (req, res) => {
     catch (error) {
         console.error('Error creating invitation:', error);
         res.status(error.status || 500).json({
-            message: error.errors?.[0]?.longMessage || 'Failed to send invitation'
+            error: error.errors?.[0]?.longMessage || 'Failed to send invitation'
         });
     }
 });
