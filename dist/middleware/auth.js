@@ -1,13 +1,28 @@
-import { ClerkExpressWithAuth, clerkClient } from '@clerk/clerk-sdk-node';
-// Middleware to protect routes and require a valid Clerk session
-export const requireAuth = (req, res, next) => {
+import { clerkClient } from '@clerk/clerk-sdk-node';
+// Middleware to protect routes - manual JWT verification for Express 5 compatibility
+export const requireAuth = async (req, res, next) => {
     try {
-        const authMiddleware = ClerkExpressWithAuth();
-        return authMiddleware(req, res, next);
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            // Attach empty auth object so downstream middleware can check
+            req.auth = { userId: null, sessionId: null, sessionClaims: null };
+            return next();
+        }
+        const token = authHeader.split(' ')[1];
+        // Use Clerk's SDK to verify the token
+        const payload = await clerkClient.verifyToken(token);
+        req.auth = {
+            userId: payload.sub,
+            sessionId: payload.sid,
+            sessionClaims: payload,
+        };
+        next();
     }
     catch (err) {
-        console.error('Clerk Auth Initialization Error:', err);
-        return res.status(500).json({ error: 'Authentication Gateway Misconfigured' });
+        console.error('Auth verification error:', err.message);
+        // Don't crash - attach empty auth and let downstream middleware decide
+        req.auth = { userId: null, sessionId: null, sessionClaims: null };
+        next();
     }
 };
 // custom middleware to check for admin role
