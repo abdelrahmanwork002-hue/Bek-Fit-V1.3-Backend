@@ -48,9 +48,9 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
-    v: '1.3.4',
+    v: '1.3.5',
     timestamp: new Date().toISOString(),
-    trace: 'recovery_auth_bypass_v1',
+    trace: 'v2_endpoint_migration',
     env: {
        hasDb: !!process.env.DATABASE_URL,
        hasClerk: !!process.env.CLERK_SECRET_KEY
