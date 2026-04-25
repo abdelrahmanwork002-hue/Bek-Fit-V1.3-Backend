@@ -1,15 +1,15 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { clerkClient } from '@clerk/clerk-sdk-node';
 import { logAuditAction } from '../lib/audit.js';
 const router = Router();
 // 1. Get all users
 router.get('/', async (req, res) => {
     try {
-        const allUsers = await db.select().from(users);
-        res.json(allUsers);
+        const result = await db.execute(sql `SELECT * FROM users`);
+        res.json(result.rows);
     }
     catch (error) {
         console.error('Error fetching users:', error);
