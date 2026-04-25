@@ -13,9 +13,9 @@ router.get('/', async (req, res) => {
   try {
     const allUsers = await db.select().from(users);
     res.json(allUsers);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
 });
 
