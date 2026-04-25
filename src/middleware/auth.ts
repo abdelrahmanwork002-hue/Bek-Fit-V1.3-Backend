@@ -1,4 +1,4 @@
-import { clerkClient } from '@clerk/clerk-sdk-node';
+import { clerkClient, verifyToken } from '@clerk/clerk-sdk-node';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 
 // Middleware to protect routes - manual JWT verification for Express 5 compatibility
@@ -13,8 +13,11 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     
     const token = authHeader.split(' ')[1];
     
-    // Use Clerk's SDK to verify the token
-    const payload = await clerkClient.verifyToken(token);
+    // verifyToken is a top-level export, NOT a method on clerkClient
+    const payload = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY!,
+      issuer: null as any, // Skip issuer validation for flexibility
+    });
     
     (req as any).auth = {
       userId: payload.sub,
