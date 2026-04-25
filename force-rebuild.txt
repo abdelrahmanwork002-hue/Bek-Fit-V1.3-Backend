@@ -1,0 +1,2 @@
+Triggering Vercel Rebuild at 2026-04-25T09:00:00Z
+Version 1.3.4 Audit: No Auth Middleware in routes/users.ts
