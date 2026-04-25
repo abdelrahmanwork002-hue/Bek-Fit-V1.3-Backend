@@ -16,9 +16,9 @@ const app = express();
 const port = process.env.PORT || 3001;
 // Middleware
 app.use(cors({
-    origin: '*', // In production, replace with specific frontend URL
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['*'],
     credentials: true,
     optionsSuccessStatus: 200
 }));
@@ -40,9 +40,9 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
     res.json({
         status: 'healthy',
-        v: '1.3.2',
+        v: '1.3.4',
         timestamp: new Date().toISOString(),
-        trace: 'cors_hardened_v2',
+        trace: 'recovery_auth_bypass_v1',
         env: {
             hasDb: !!process.env.DATABASE_URL,
             hasClerk: !!process.env.CLERK_SECRET_KEY
