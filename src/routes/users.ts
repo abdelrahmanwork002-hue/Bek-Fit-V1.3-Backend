@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
     res.json(allUsers);
   } catch (error: any) {
     console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    res.status(500).json({ error: 'Internal User Fetch Error', message: error.message });
   }
 });
 
