@@ -11,11 +11,17 @@ const router = Router();
 // 1. Get all users
 router.get('/', async (req, res) => {
   try {
-    const result = await db.execute(sql`SELECT * FROM users`);
+    const result = await db.execute(sql`SELECT * FROM public.users`);
     res.json(result.rows);
   } catch (error: any) {
+    const tableList = await db.execute(sql`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`);
+    const tables = tableList.rows.map((r: any) => r.table_name).join(', ');
     console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Internal User Fetch Error', message: error.message });
+    res.status(500).json({ 
+      error: 'Internal User Fetch Error', 
+      message: error.message,
+      visible_tables: tables
+    });
   }
 });
 
