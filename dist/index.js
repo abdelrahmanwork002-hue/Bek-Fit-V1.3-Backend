@@ -28,7 +28,7 @@ app.use(express.json());
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/exercises', exerciseRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/users-v2', userRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/routines', routineRoutes);
