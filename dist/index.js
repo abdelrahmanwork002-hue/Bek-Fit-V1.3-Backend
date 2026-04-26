@@ -45,6 +45,7 @@ app.get('/health', (req, res) => {
         trace: 'v2_schema_scan_v1',
         env: {
             hasDb: !!process.env.DATABASE_URL,
+            dbHost: process.env.DATABASE_URL ? process.env.DATABASE_URL.split('@')[1]?.split('/')[0] : 'MISSING',
             hasClerk: !!process.env.CLERK_SECRET_KEY
         }
     });
