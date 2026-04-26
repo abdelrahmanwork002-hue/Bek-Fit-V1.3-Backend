@@ -50,7 +50,7 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
-    v: '1.3.8',
+    v: '1.3.9',
     timestamp: new Date().toISOString(),
     trace: 'db_host_verification_v2',
     env: {
