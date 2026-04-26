@@ -8,25 +8,19 @@ import { logAuditAction } from '../lib/audit.js';
 
 const router = Router();
 
-// 1. Get all users
-router.get('/', async (req, res) => {
+// 1. Get all users (Admin only)
+router.get('/', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const result = await db.execute(sql`SELECT * FROM public.users`);
-    res.json(result.rows);
+    const allUsers = await db.select().from(users);
+    res.json(allUsers);
   } catch (error: any) {
-    const tableList = await db.execute(sql`SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'pg_catalog')`);
-    const tables = tableList.rows.map((r: any) => `${r.table_schema}.${r.table_name}`).join(', ');
     console.error('Error fetching users:', error);
-    res.status(500).json({ 
-      error: 'Internal User Fetch Error', 
-      message: error.message,
-      visible_tables: tables || 'NONE_FOUND'
-    });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// 2. Create a new user directly
-router.post('/create', async (req, res) => {
+// 2. Create a new user directly (Admin only)
+router.post('/create', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { email, password, role, fullName, phoneNumber } = req.body;
 
