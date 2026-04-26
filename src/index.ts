@@ -12,7 +12,6 @@ import logRoutes from './routes/logs.js';
 import aiRoutes from './routes/ai.js';
 import routineRoutes from './routes/routines.js';
 import planRoutes from './routes/plans.js';
-import initDbRoutes from './routes/init-db.js';
 
 dotenv.config();
 
@@ -35,7 +34,6 @@ app.use(express.json());
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/exercises', exerciseRoutes);
-app.use('/api/init-db', initDbRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/ai', aiRoutes);
@@ -50,7 +48,7 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
-    v: '1.3.10',
+    v: '1.3.11',
     timestamp: new Date().toISOString(),
     trace: 'db_host_verification_v2',
     env: {
