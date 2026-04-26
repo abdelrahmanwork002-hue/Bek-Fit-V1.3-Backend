@@ -48,12 +48,12 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
-    v: '1.3.7',
+    v: '1.3.8',
     timestamp: new Date().toISOString(),
-    trace: 'v2_schema_scan_v1',
+    trace: 'db_host_verification_v2',
     env: {
        hasDb: !!process.env.DATABASE_URL,
-       dbHost: process.env.DATABASE_URL ? process.env.DATABASE_URL.split('@')[1]?.split('/')[0] : 'MISSING',
+       dbHost: process.env.DATABASE_URL ? (process.env.DATABASE_URL.includes('@') ? process.env.DATABASE_URL.split('@')[1]?.split('/')[0] : 'NO_AT_SYMBOL') : 'MISSING',
        hasClerk: !!process.env.CLERK_SECRET_KEY
     }
   });
