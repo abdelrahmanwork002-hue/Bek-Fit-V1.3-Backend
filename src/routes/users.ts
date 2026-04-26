@@ -14,13 +14,13 @@ router.get('/', async (req, res) => {
     const result = await db.execute(sql`SELECT * FROM public.users`);
     res.json(result.rows);
   } catch (error: any) {
-    const tableList = await db.execute(sql`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`);
-    const tables = tableList.rows.map((r: any) => r.table_name).join(', ');
+    const tableList = await db.execute(sql`SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'pg_catalog')`);
+    const tables = tableList.rows.map((r: any) => `${r.table_schema}.${r.table_name}`).join(', ');
     console.error('Error fetching users:', error);
     res.status(500).json({ 
       error: 'Internal User Fetch Error', 
       message: error.message,
-      visible_tables: tables
+      visible_tables: tables || 'NONE_FOUND'
     });
   }
 });
